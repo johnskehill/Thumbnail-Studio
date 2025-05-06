@@ -1,68 +1,124 @@
+/* src/index.css */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* → Use Inter everywhere → */
+  --font-sans: 'Inter', sans-serif;
 
+  /* Color tokens */
+  --bg: #242424;
+  --fg: rgba(255, 255, 255, 0.87);
+  --accent: #646cff;
+  --accent-hover: #535bf2;
+  --btn-bg: #1a1a1a;
+  --btn-hover-border: var(--accent);
+
+  /* Light mode overrides */
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+}
 
-  font-synthesis: none;
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #ffffff;
+    --fg: #213547;
+    --accent-hover: #747bff;
+    --btn-bg: #f9f9f9;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  background-color: var(--bg);
+  color: var(--fg);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
 body {
   margin: 0;
   display: flex;
-  place-items: center;
-  min-width: 320px;
+  flex-direction: column;
   min-height: 100vh;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  margin: 0;
+  color: var(--fg);
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+a {
+  color: var(--accent);
+  text-decoration: none;
   font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+}
+
+a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* Buttons */
+button {
+  font-family: var(--font-sans);
+  background-color: var(--btn-bg);
+  color: var(--fg);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.6em 1.2em;
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color 0.2s ease;
 }
+
 button:hover {
-  border-color: #646cff;
+  border-color: var(--btn-hover-border);
 }
-button:focus,
-button:focus-visible {
+
+button:focus {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* Sidebar + main container helpers */
+.app-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  flex: 0 0 280px;
+  padding: 1.5rem;
+  border-right: 1px solid rgba(255,255,255,0.1);
+  background-color: var(--bg);
+  color: var(--fg);
+  overflow-y: auto;
+}
+
+.main {
+  flex: 1;
+  padding: 1.5rem;
+  background-color: var(--bg);
+  overflow: auto;
+}
+
+/* Form elements */
+input[type="file"] {
+  font-family: var(--font-sans);
+  color: var(--fg);
+}
+
+label {
+  display: block;
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
 }
