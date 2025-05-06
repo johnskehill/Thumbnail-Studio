@@ -1,185 +1,147 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Stage, Layer, Image as KImage, Text as KText } from 'react-konva';
-import { v4 as uuid } from 'uuid';
-import { ChromePicker } from 'react-color';
+import React, { useState, useRef } from 'react'
+import { Stage, Layer, Image as KImage, Text as KText } from 'react-konva'
+import { v4 as uuid } from 'uuid'
+import { ChromePicker } from 'react-color'
 
 interface LayerItem {
-  id: string;
-  type: 'image' | 'text';
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  src?: string;      // for images
-  text?: string;     // for text
-  fontSize?: number;
-  fontFamily?: string;
-  fill?: string;
-  outline?: { color: string; width: number } | null;
+  id: string
+  type: 'image' | 'text'
+  x: number
+  y: number
+  // for images
+  src?: string
+  width?: number
+  height?: number
+  // for text
+  text?: string
+  fontSize?: number
+  fontFamily?: string
+  fill?: string
+  outline?: { color: string; width: number } | null
 }
 
-// Hook to load an HTMLImageElement from a blob URL
-function useLoadedImage(url?: string) {
-  const [img, setImg] = useState<HTMLImageElement | null>(null);
-  useEffect(() => {
-    if (!url) return;
-    const image = new window.Image();
-    image.src = url;
+// Hook to load an image and get its natural size
+function useImage(
+  url: string | undefined,
+  onLoad?: (img: HTMLImageElement) => void
+) {
+  const [img, setImg] = useState<HTMLImageElement | null>(null)
+  React.useEffect(() => {
+    if (!url) return
+    const image = new window.Image()
+    image.src = url
     image.onload = () => {
-      console.log('✅ loaded image', url, image.width, image.height);
-      setImg(image);
-    };
-  }, [url]);
-  return img;
-}
-
-type LayerImageProps = {
-  layer: LayerItem;
-  onDrag: (id: string, x: number, y: number) => void;
-  onSelect: (id: string) => void;
-};
-function LayerImage({ layer, onDrag, onSelect }: LayerImageProps) {
-  const img = useLoadedImage(layer.src);
-  if (!img) return null;
-  return (
-    <KImage
-      image={img}
-      x={layer.x}
-      y={layer.y}
-      width={layer.width}
-      height={layer.height}
-      draggable
-      onDragEnd={e => onDrag(layer.id, e.target.x(), e.target.y())}
-      stroke={layer.outline?.color}
-      strokeWidth={layer.outline?.width || 0}
-      onClick={() => onSelect(layer.id)}
-    />
-  );
-}
-
-type LayerTextProps = {
-  layer: LayerItem;
-  onDrag: (id: string, x: number, y: number) => void;
-  onSelect: (id: string) => void;
-};
-function LayerText({ layer, onDrag, onSelect }: LayerTextProps) {
-  return (
-    <KText
-      text={layer.text}
-      x={layer.x}
-      y={layer.y}
-      fontSize={layer.fontSize}
-      fontFamily={layer.fontFamily}
-      fill={layer.fill}
-      draggable
-      onDragEnd={e => onDrag(layer.id, e.target.x(), e.target.y())}
-      stroke={layer.outline?.color}
-      strokeWidth={layer.outline?.width || 0}
-      onClick={() => onSelect(layer.id)}
-    />
-  );
+      setImg(image)
+      onLoad && onLoad(image)
+    }
+  }, [url])
+  return img
 }
 
 export default function ThumbnailEditor() {
-  const [layers, setLayers] = useState<LayerItem[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const stageRef = useRef<any>(null);
+  const [layers, setLayers] = useState<LayerItem[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [stageSize, setStageSize] = useState({ width: 600, height: 400 })
+  const stageRef = useRef<any>(null)
 
-  // Add an image layer
+  // When you pick a file, preload it to get natural dimensions,
+  // then scale to fit within maxStage dims, preserving aspect.
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setLayers(l => [
-      ...l,
-      {
-        id: uuid(),
-        type: 'image',
-        x: 20,
-        y: 20,
-        width: 400,
-        height: 300,
-        src: url,
-        outline: null,
-      },
-    ]);
-  };
+    const file = e.target.files?.[0]
+    if (!file) return
+    const url = URL.createObjectURL(file)
 
-  // Add a text layer
+    const img = new window.Image()
+    img.src = url
+    img.onload = () => {
+      const maxW = 800
+      const maxH = 600
+      const ratio = Math.min(maxW / img.width, maxH / img.height, 1)
+      const width = img.width * ratio
+      const height = img.height * ratio
+
+      // resize stage
+      setStageSize({ width, height })
+
+      // add an image layer sized to fit stage
+      setLayers((prev) =>
+        prev.concat({
+          id: uuid(),
+          type: 'image',
+          x: 0,
+          y: 0,
+          src: url,
+          width,
+          height,
+          outline: null,
+        })
+      )
+    }
+  }
+
+  // Add a default text layer
   const addText = () => {
-    setLayers(l => [
-      ...l,
-      {
+    setLayers((prev) =>
+      prev.concat({
         id: uuid(),
         type: 'text',
-        x: 50,
-        y: 50,
+        x: 20,
+        y: 20,
         text: 'Hello World',
         fontSize: 48,
         fontFamily: 'Arial',
         fill: '#ffffff',
         outline: null,
-      },
-    ]);
-  };
+      })
+    )
+  }
 
-  // Handler for dragging
-  const moveLayer = (id: string, x: number, y: number) => {
-    setLayers(layers =>
-      layers.map(layer =>
-        layer.id === id ? { ...layer, x, y } : layer,
-      ),
-    );
-  };
-
-  // Export as PNG
+  // Export stage as PNG
   const exportImage = () => {
-    if (!stageRef.current) return;
-    const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
-    const a = document.createElement('a');
-    a.download = 'thumbnail.png';
-    a.href = uri;
-    a.click();
-  };
-
-  const selectedLayer = layers.find(l => l.id === selectedId);
+    if (!stageRef.current) return
+    const uri = stageRef.current.toDataURL({ pixelRatio: 2 })
+    const a = document.createElement('a')
+    a.download = 'thumbnail.png'
+    a.href = uri
+    a.click()
+  }
 
   return (
-    <div style={{ display: 'flex', gap: 20 }}>
-      {/* Sidebar Controls */}
-      <div style={{ width: 250, color: '#fff' }}>
+    <div className="app-container">
+      <aside className="sidebar">
+        <h2>Thumbnail Craft Studio</h2>
+        <p>Use the controls below to upload your image, add text, and export.</p>
+
         <h3>Controls</h3>
         <input type="file" accept="image/*" onChange={handleFile} />
-        <br />
-        <br />
         <button onClick={addText}>Add Text</button>
-        <br />
-        <br />
-
-        {selectedLayer && selectedLayer.type === 'text' && (
+        {selectedId && (
           <>
-            <h4>Edit Text Layer</h4>
-            <label>Text color</label>
-            <ChromePicker
-              color={selectedLayer.fill!}
-              onChange={c => {
-                setLayers(layers =>
-                  layers.map(layer =>
-                    layer.id === selectedId
-                      ? { ...layer, fill: c.hex }
-                      : layer,
-                  ),
-                );
-              }}
-            />
-            <br />
+            <h4>Edit Layer</h4>
+            {layers.find((l) => l.id === selectedId)?.type === 'text' && (
+              <>
+                <label>Text color</label>
+                <ChromePicker
+                  color={layers.find((l) => l.id === selectedId)!.fill!}
+                  onChange={(c) =>
+                    setLayers((L) =>
+                      L.map((layer) =>
+                        layer.id === selectedId
+                          ? { ...layer, fill: c.hex }
+                          : layer
+                      )
+                    )
+                  }
+                />
+              </>
+            )}
             <label>
               <input
                 type="checkbox"
-                checked={!!selectedLayer.outline}
-                onChange={e =>
-                  setLayers(layers =>
-                    layers.map(layer =>
+                checked={!!layers.find((l) => l.id === selectedId)!.outline}
+                onChange={(e) => {
+                  setLayers((L) =>
+                    L.map((layer) =>
                       layer.id === selectedId
                         ? {
                             ...layer,
@@ -187,49 +149,80 @@ export default function ThumbnailEditor() {
                               ? { color: '#ff0000', width: 4 }
                               : null,
                           }
-                        : layer,
-                    ),
+                        : layer
+                    )
                   )
-                }
+                }}
               />{' '}
               Outline
             </label>
           </>
         )}
-
-        <br />
         <button onClick={exportImage}>Export PNG</button>
-      </div>
+      </aside>
 
-      {/* Canvas */}
-      <div style={{ flexGrow: 1 }}>
+      <main className="main">
         <Stage
-          width={800}
-          height={500}
+          width={stageSize.width}
+          height={stageSize.height}
           ref={stageRef}
-          style={{ background: '#222', border: '2px solid #444' }}
+          style={{ background: '#333' }}
         >
           <Layer>
-            {layers.map(layer =>
-              layer.type === 'image' ? (
-                <LayerImage
-                  key={layer.id}
-                  layer={layer}
-                  onDrag={moveLayer}
-                  onSelect={setSelectedId}
-                />
-              ) : (
-                <LayerText
-                  key={layer.id}
-                  layer={layer}
-                  onDrag={moveLayer}
-                  onSelect={setSelectedId}
-                />
-              ),
-            )}
+            {layers.map((layer) => {
+              if (layer.type === 'image') {
+                const img = useImage(layer.src)
+                return img ? (
+                  <KImage
+                    key={layer.id}
+                    image={img}
+                    x={layer.x}
+                    y={layer.y}
+                    width={layer.width}
+                    height={layer.height}
+                    draggable
+                    onDragEnd={(e) => {
+                      const { x, y } = e.target
+                      setLayers((L) =>
+                        L.map((l2) =>
+                          l2.id === layer.id ? { ...l2, x, y } : l2
+                        )
+                      )
+                    }}
+                    stroke={layer.outline?.color}
+                    strokeWidth={layer.outline?.width || 0}
+                    onClick={() => setSelectedId(layer.id)}
+                  />
+                ) : null
+              } else {
+                return (
+                  <KText
+                    key={layer.id}
+                    text={layer.text!}
+                    x={layer.x}
+                    y={layer.y}
+                    fontSize={layer.fontSize}
+                    fontFamily={layer.fontFamily}
+                    fill={layer.fill}
+                    draggable
+                    onDragEnd={(e) => {
+                      const { x, y } = e.target
+                      setLayers((L) =>
+                        L.map((l2) =>
+                          l2.id === layer.id ? { ...l2, x, y } : l2
+                        )
+                      )
+                    }}
+                    stroke={layer.outline?.color}
+                    strokeWidth={layer.outline?.width || 0}
+                    onClick={() => setSelectedId(layer.id)}
+                  />
+                )
+              }
+            })}
           </Layer>
         </Stage>
-      </div>
+      </main>
     </div>
-  );
+  )
 }

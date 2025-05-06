@@ -90,26 +90,23 @@ button:focus {
 /* Sidebar + main container helpers */
 .app-container {
   display: flex;
-  flex: 1;
+  height: 100vh;
   overflow: hidden;
 }
-
 .sidebar {
-  flex: 0 0 280px;
+  width: 280px;
   padding: 1.5rem;
-  border-right: 1px solid rgba(255,255,255,0.1);
-  background-color: var(--bg);
-  color: var(--fg);
+  background-color: #1a1a1a;
+  color: #fff;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.3);
   overflow-y: auto;
 }
-
 .main {
   flex: 1;
+  background-color: #242424;
   padding: 1.5rem;
-  background-color: var(--bg);
   overflow: auto;
 }
-
 /* Form elements */
 input[type="file"] {
   font-family: var(--font-sans);
@@ -121,4 +118,41 @@ label {
   margin-top: 1rem;
   margin-bottom: 0.25rem;
   font-weight: 500;
+}
+
+/* Layout */
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 280px;
+  padding: 1.5rem;
+  background-color: #1a1a1a;
+  color: #fff;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+  overflow-y: auto;
+}
+
+.main {
+  flex: 1;
+  background-color: #242424;
+  padding: 1.5rem;
+  overflow: auto;
+}
+
+/* Headings inside sidebar */
+.sidebar h2 {
+  margin-top: 0;
+  font-size: 1.8rem;
+  border-bottom: 1px solid #444;
+  padding-bottom: 0.5rem;
+}
+
+/* Paragraph in sidebar */
+.sidebar p {
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
 }
